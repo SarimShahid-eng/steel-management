@@ -1,0 +1,734 @@
+================================================================================
+                    DATABASE BLUEPRINT GUIDE v2.0
+              UpKeep Plaza Management System - Models & Relations
+                   (Refined with Proper Separation of Concerns)
+
+================================================================================
+                           CORE TABLES (15 TOTAL)
+================================================================================
+
+TIER 1: FOUNDATIONAL (Everything else depends on these)
+────────────────────────────────────────────────────
+
+✓ plazas
+  └─ Represents each building/complex being managed
+  └─ Fields: id, name, city, country, total_units, master_pool_balance, currency_code
+  └─ Key field: master_pool_balance (total available funds)
+  └─ NEW: country & currency_code for multi-country support
+  └─ Relationships: has many users, units, maintenance_posts, etc.
+
+✓ plaza_settings
+  └─ Configuration for each plaza (set by Admin only)
+  └─ Fields: maintenance_approval_threshold, monthly_dues_amount, late_fee_percentage
+  └─ NEW: late_fee_percentage (configurable late payment charges)
+  └─ Example: If maintenance > Rs. 50,000, Chairman must approve
+
+TIER 2: USERS & ROLES
+──────────────────────
+
+✓ users
+  └─ 4 roles: admin, chairman, assistant, member
+  └─ Fields: id, email, password_hash, full_name, phone_number, role, plaza_id, unit_id
+  └─ unit_id: Only populated for members (residents). Which apartment?
+  └─ Relationships: belongs to plaza, belongs to unit (if member)
+
+✓ device_tokens
+  └─ FCM tokens for push notifications (one per device/session)
+  └─ Fields: id, user_id, token, platform (ios/android/web), device_name, is_active
+  └─ NEW: device_name field (iPhone 13, Samsung Galaxy, etc.)
+  └─ Relationships: belongs to user
+
+TIER 3: UNITS & RESIDENTS
+──────────────────────────
+
+✓ units
+  └─ Individual apartments in each plaza
+  └─ Fields: id, plaza_id, unit_number, status, resident_name, resident_phone, due
+  └─ Status: "Paid" (no dues), "Pending" (owes money), "Vacant" (empty)
+  └─ NEW: floor (which floor is the unit on?)
+  └─ NEW: resident_phone (direct contact without looking up user)
+  └─ NEW: monthly_dues_amount (can vary per unit - penthouse vs 1BHK)
+  └─ Key constraint: resident_name = NULL when Vacant
+  └─ Relationships: belongs to plaza, has one resident (user)
+
+TIER 4: MAINTENANCE & FINANCIAL OPERATIONS
+────────────────────────────────────────────
+
+✓ maintenance_posts
+  └─ Maintenance work log with approval workflow
+  └─ Fields: id, title, category, cost, status, vendor_name, vendor_phone
+  └─ Status: IMPLEMENTED, PENDING_APPROVAL, APPROVED, REJECTED
+  └─ Relationships: belongs to plaza, created by user, approved by user
+  └─ IMPROVED: No JSON arrays - uses separate maintenance_attachments table
+  └─ Key: linked_ticket_id (if responding to resident complaint)
+  └─ Key: linked_assessment_id (if funded by special assessment)
+
+✓ maintenance_attachments ⭐ NEW TABLE
+  └─ Photos/files attached to maintenance posts (PROPER SEPARATION)
+  └─ Fields: id, maintenance_post_id, file_url, file_type, file_name, file_size_bytes
+  └─ NEW: uploaded_by (who uploaded - full audit trail)
+  └─ NEW: file_type (image/jpeg, video/mp4, application/pdf, etc.)
+  └─ NEW: file_size_bytes (track storage usage)
+  └─ Benefits:
+     ├─ Clear separation of concerns
+     ├─ Can query by file type
+     ├─ Audit trail (who uploaded what)
+     ├─ Storage tracking per user
+     ├─ Easy to add file expiry policies
+     └─ Follows relational database best practices
+
+✓ special_assessments
+  └─ Special funding requests when costs exceed available balance
+  └─ Fields: id, title, reason, required_amount, shortfall, occupied_units, per_unit_amount
+  └─ Status: PENDING, APPROVED, REJECTED, APPROVED_AND_IMPLEMENTED
+  └─ When APPROVED: all residents' dues are increased atomically
+  └─ Relationships: created by admin, approved by chairman
+
+✓ payments
+  └─ Track all resident payments (dues, assessments, etc.)
+  └─ Fields: id, plaza_id, unit_id, amount, payment_type, payment_month, recorded_by
+  └─ NEW: payment_month (YYYY-MM format - which month is this for?)
+  └─ NEW: is_late (boolean - was this payment late?)
+  └─ Types: App, Cash, Bank Transfer, Cheque, Card
+  └─ Relationships: belongs to unit, recorded by user
+
+TIER 5: TICKETS & COMPLAINTS
+────────────────────────────
+
+✓ tickets
+  └─ Resident complaints and maintenance requests
+  └─ Fields: id, unit_id, subject, category, description, status, priority
+  └─ Status: Pending, In Progress, Resolved
+  └─ Priority: Low, Medium, High, Urgent
+  └─ Relationships: belongs to unit, created by user, assigned to admin
+  └─ IMPROVED: No JSON arrays - uses separate ticket_attachments table
+
+✓ ticket_attachments  NEW TABLE
+  └─ Photos attached to tickets (PROPER SEPARATION)
+  └─ Fields: id, ticket_id, file_url, file_type, file_name, file_size_bytes
+  └─ NEW: uploaded_by (who uploaded)
+  └─ NEW: file_type, file_size_bytes (metadata tracking)
+  └─ Benefits: Same as maintenance_attachments - proper separation pattern
+
+TIER 6: NOTIFICATIONS & COMMUNICATION
+──────────────────────────────────────
+
+✓ notifications
+  └─ FCM push notifications sent to users
+  └─ Fields: id, user_id, type, title, message, is_read
+  └─ Types: dues, ticket, announcement, payment, assessment, maintenance, reminder
+  └─ Key: is_read (tracks if notification was viewed)
+  └─ Relationships: belongs to user
+
+✓ broadcasts
+  └─ Admin announcements sent to all residents
+  └─ Fields: id, title, message, is_urgent, sent_to_count, created_by
+  └─ Key: is_urgent (determines FCM priority flag)
+  └─ Relationships: created by admin
+
+TIER 7: AUDIT & COMPLIANCE
+───────────────────────────
+
+✓ audit_logs
+  └─ Complete audit trail of all actions (Admin only can view)
+  └─ Fields: id, user_id, action, resource_type, resource_id, before_state, after_state
+  └─ Key: before_state, after_state (JSON snapshots - what changed?)
+  └─ Actions: login, logout, create_user, approve_maintenance, override_decision, etc.
+  └─ Relationships: belongs to user who performed action
+
+✓ transaction_logs ⭐ NEW TABLE
+  └─ Financial transaction log (DEDICATED FINANCIAL AUDIT TRAIL)
+  └─ Fields: id, transaction_type, amount, description, balance_before, balance_after
+  └─ NEW: Separate from audit_logs for financial integrity
+  └─ transaction_type: 'credit' (money in) or 'debit' (money out)
+  └─ NEW: balance_before & balance_after (proves financial consistency)
+  └─ NEW: related_resource_id & related_resource_type (links to maintenance, payment, etc.)
+  └─ Benefits:
+     ├─ Financial audits separate from action audits
+     ├─ Easy to verify: "How did balance go from 245K to 232.5K?"
+     ├─ Can reconcile: sum(credits) - sum(debits) = current_balance
+     ├─ Compliance-ready for financial reporting
+     ├─ Prevents accidental balance inconsistencies
+     └─ Full trail of every rupee in/out
+
+================================================================================
+                            RELATIONSHIPS EXPLAINED
+================================================================================
+
+PARENT-CHILD RELATIONSHIPS (One-to-Many)
+────────────────────────────────────────
+
+Plaza → Users (one plaza, many users of different roles)
+  └─ Skyline Heights has: 1 admin, 1 chairman, 2 assistants, 20 members
+
+Plaza → Units (one plaza, many apartments)
+  └─ Skyline Heights has 20 apartments
+
+Plaza → Maintenance_Posts (one plaza, many maintenance records)
+  └─ All work done on Skyline Heights
+
+Plaza → Payments (one plaza, many monthly payments)
+  └─ Skyline Heights collects payments each month from 20 units
+
+Plaza → Tickets (one plaza, many complaints)
+  └─ All resident complaints in the plaza
+
+Plaza → Special_Assessments (one plaza, many assessment requests)
+  └─ All generator assessments, roof assessments, etc.
+
+Plaza → Transaction_Logs (one plaza, many financial transactions)
+  └─ Every credit/debit tracked for that plaza
+
+User → Device_Tokens (one user, multiple devices)
+  └─ User Hammad is logged in on phone + tablet = 2 tokens
+
+User → Maintenance_Posts_Created (admin created many maintenances)
+  └─ Admin Hammad logged 50+ maintenance records
+
+Unit → Tickets (one apartment, many complaints over time)
+  └─ Apt 301 has reported: leaking pipe, noise, electrical issue
+
+Unit → Payments (one apartment, many payments over months)
+  └─ Apt 301 pays Rs. 5,000 every month = 12 payments/year
+
+Maintenance_Posts → Attachments (one maintenance, many photos/files)
+  └─ Hallway pipe fix has: before photo, during photo, after photo = 3 attachments
+
+Tickets → Attachments (one ticket, many photos)
+  └─ Complaint about leaking pipe has: photo1, photo2 = 2 attachments
+
+Special_Assessment → Notifications (assessment creates one notification per resident)
+  └─ Generator assessment triggers 18 notifications (one per occupied unit)
+
+EXCLUSIVE RELATIONSHIPS (One-to-One)
+────────────────────────────────────
+
+Plaza ↔ Plaza_Settings (one plaza, one settings record)
+  └─ Each plaza has its own configuration
+
+Unit ↔ User/Resident (one apartment, one current resident)
+  └─ When unit.status = 'Vacant', resident = NULL
+  └─ When unit.status = 'Paid' or 'Pending', resident is populated
+
+Ticket ↔ Maintenance_Post (optional link)
+  └─ Ticket may or may not be converted to maintenance
+
+FOREIGN KEY REFERENCES
+──────────────────────
+
+created_by → User (Admin who created this)
+  └─ maintenance_posts.created_by → Admin who logged the work
+  └─ special_assessments.created_by → Admin who requested assessment
+
+approved_by → User (Chairman who approved this)
+  └─ maintenance_posts.approved_by → Chairman who approved large expense
+  └─ special_assessments.approved_by → Chairman who approved assessment
+
+assigned_to → User (Admin handling this ticket)
+  └─ tickets.assigned_to → Which admin is working on this complaint?
+
+recorded_by → User (Who logged this payment/transaction)
+  └─ payments.recorded_by → Admin or Assistant who recorded payment
+  └─ transaction_logs.recorded_by → Who caused this transaction?
+
+uploaded_by → User (Who uploaded this file)
+  └─ maintenance_attachments.uploaded_by → Admin who uploaded photo
+  └─ ticket_attachments.uploaded_by → Resident who uploaded complaint photo
+
+linked_ticket_id → Ticket (if maintenance is responding to complaint)
+  └─ Example: Resident complained about leaking pipe → Admin fixed it → Logged as maintenance
+
+linked_assessment_id → Special_Assessment (if maintenance was funded by assessment)
+  └─ Example: Generator replacement funded by special assessment
+
+================================================================================
+                          ATOMIC TRANSACTIONS (Critical)
+================================================================================
+
+When these operations happen, EVERYTHING must succeed or EVERYTHING rolls back:
+
+SPECIAL ASSESSMENT APPROVAL (Most Complex):
+  When Chairman approves special assessment for Rs. 17,500 (Rs. 973 per unit):
+
+  The system ATOMICALLY:
+  1. Updates ALL 18 occupied units' "due" field by +973
+  2. Creates notification record for each resident
+  3. Queues high-priority FCM pushes for all 18
+  4. Updates special_assessment.status → APPROVED_AND_IMPLEMENTED
+
+  If step 1 updates 17 units but step 2 fails on unit 18:
+  → ENTIRE operation rolls back. No units are updated. No notifications created.
+
+  This ensures consistency: either all residents are assessed OR none are.
+
+MAINTENANCE POST CREATION (with cost > threshold):
+  When Admin logs maintenance for Rs. 180,000:
+
+  The system ATOMICALLY:
+  1. Validates cost > 0 and cost <= master_pool_balance
+  2. Deducts Rs. 180,000 from master_pool_balance
+  3. Creates maintenance_posts record
+  4. Creates transaction_log entry (debit: 180,000)
+  5. Creates audit_log entry (action: create_maintenance)
+
+  If step 2 fails (balance check):
+  → ENTIRE operation rolls back. Balance unchanged. Post not created.
+
+  This ensures: deduction, post creation, and logs happen together or not at all.
+
+PAYMENT PROCESSING:
+  When resident pays Rs. 5,000:
+
+  The system ATOMICALLY:
+  1. Updates units.due from 5,000 → 0
+  2. Updates units.status from "Pending" → "Paid"
+  3. Sets units.last_payment_date timestamp
+  4. Creates payment record
+  5. Creates transaction_log entry (credit: 5,000)
+  6. Creates audit_log entry (action: log_payment)
+  7. Queues FCM notification
+
+  If any step fails:
+  → ENTIRE operation rolls back. Unit state unchanged.
+
+  This ensures: payment recorded completely or not at all.
+
+FILE ATTACHMENT CREATION:
+  When Admin uploads photo for maintenance:
+
+  The system:
+  1. Uploads file to CDN (S3/Firebase) → gets URL back
+  2. Creates maintenance_attachments record with file_url
+  3. Creates audit_log entry
+
+  If CDN upload fails: don't create database record
+  If database creation fails: notify admin, file stays on CDN (cleanup job removes it)
+
+================================================================================
+                            KEY INDEXES (Performance)
+================================================================================
+
+HIGH PRIORITY (use frequently)
+──────────────────────────────
+users.email → login queries (frequently used)
+users.plaza_id → tenant isolation (every query)
+users.role → authorization checks (every request)
+units.plaza_id → tenant isolation (every query)
+units.status → "How many units are Paid/Pending/Vacant?"
+maintenance_posts.status → "Show me pending approvals"
+special_assessments.status → "Show me assessments awaiting approval"
+tickets.status → "Show me open complaints"
+notifications.user_id, is_read → "Show me unread notifications"
+audit_logs.[plaza_id, action, user_id] → audit queries
+transaction_logs.[plaza_id, created_at] → financial reports
+
+MEDIUM PRIORITY
+───────────────
+maintenance_posts.created_at → time-ordered queries
+tickets.created_at → time-ordered queries
+tickets.priority → sort by urgency
+payments.payment_month → financial reports
+device_tokens.is_active → FCM dispatch
+
+COMPOSITE INDEXES (speed up complex queries)
+────────────────────────────────────────────
+[users.plaza_id, users.role] → "Find all admins in Skyline Heights"
+[units.plaza_id, units.status] → "How many units in Skyline Heights are Paid?"
+[notifications.user_id, is_read] → "Count unread notifications for this user"
+[maintenance_posts.plaza_id, status] → "Show pending approvals for this plaza"
+[special_assessments.plaza_id, status] → "Show pending assessments"
+[tickets.unit_id, status] → "Show resident's open complaints"
+[payments.unit_id, payment_month] → "Payment history for unit"
+
+================================================================================
+                        UNIQUE CONSTRAINTS (Prevent Duplicates)
+================================================================================
+
+users.email is UNIQUE
+  └─ No two users can have the same email address
+
+device_tokens.token is UNIQUE
+  └─ Each FCM token maps to exactly one device session
+  └─ When user logs out on their phone, delete the token
+
+[units.plaza_id + unit_number] is UNIQUE
+  └─ In Skyline Heights, there can be only one "Apt 101"
+  └─ But another plaza could have its own "Apt 101"
+
+[plaza_settings.plaza_id] is UNIQUE
+  └─ Each plaza has exactly one settings record
+
+================================================================================
+                          NULLABLE FIELDS (Optional Data)
+================================================================================
+
+Fields that can be NULL:
+  └─ users.unit_id → Only populated for members (residents)
+  └─ users.phone_number → Optional contact info
+  └─ users.last_login → NULL until first login
+  └─ units.resident_name → NULL if unit.status = 'Vacant'
+  └─ units.resident_phone → NULL if Vacant
+  └─ units.floor → Optional (if building has no explicit floors)
+  └─ units.notes → Optional admin notes
+  └─ units.last_payment_date → NULL if resident never paid
+  └─ maintenance_posts.linked_ticket_id → NULL if not responding to ticket
+  └─ maintenance_posts.linked_assessment_id → NULL if not funded by assessment
+  └─ maintenance_posts.approval_notes → NULL if no notes
+  └─ maintenance_posts.vendor_phone → NULL if no phone
+  └─ maintenance_posts.approved_by → NULL until Chairman approves
+  └─ special_assessments.approved_by → NULL until Chairman approves
+  └─ tickets.assigned_to → NULL until Admin assigns
+  └─ tickets.resolution_notes → NULL until resolved
+  └─ tickets.resolved_at → NULL until status = 'Resolved'
+  └─ payments.reference_number → NULL if no reference
+  └─ notifications.related_resource_id → NULL if not tied to specific resource
+  └─ device_tokens.last_used → NULL if never used yet
+  └─ device_tokens.device_name → NULL if not provided
+
+================================================================================
+                          ENUM FIELDS (Fixed Values)
+================================================================================
+
+users.role = ['admin', 'chairman', 'assistant', 'member'] (exactly 4 options)
+units.status = ['Paid', 'Pending', 'Vacant'] (exactly 3 options)
+units.unit_type = ['1bhk', '2bhk', '3bhk', 'studio', 'penthouse', 'other']
+maintenance_posts.category = ['Plumbing', 'Electrical', 'Cleaning', 'Generator/Fuel', 'General Repair', 'Security', 'Painting', 'HVAC', 'Other']
+maintenance_posts.status = ['IMPLEMENTED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED'] (4 statuses)
+maintenance_attachments.file_type = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'video/mp4']
+special_assessments.status = ['PENDING', 'APPROVED', 'REJECTED', 'APPROVED_AND_IMPLEMENTED']
+tickets.status = ['Pending', 'In Progress', 'Resolved'] (exactly 3 statuses)
+tickets.priority = ['Low', 'Medium', 'High', 'Urgent'] (4 options)
+tickets.category = ['Plumbing', 'Electrical', 'Cleaning', 'Noise', 'Security', 'Safety', 'Other']
+notifications.type = ['dues', 'ticket', 'announcement', 'payment', 'assessment', 'maintenance', 'reminder']
+device_tokens.platform = ['ios', 'android', 'web'] (3 platforms)
+payments.payment_type = ['App', 'Cash', 'Bank Transfer', 'Cheque', 'Card'] (5 types)
+transaction_logs.transaction_type = ['credit', 'debit'] (2 types)
+audit_logs.action = [17+ specific actions like 'approve_maintenance', 'log_payment', ...]
+
+================================================================================
+                          DECIMAL PRECISION (Money)
+================================================================================
+
+All monetary fields use: decimal(15,2)
+  └─ Up to 15 total digits with 2 decimal places
+  └─ Example: 999,999,999,999.99 (almost 1 trillion rupees)
+  └─ Ensures exact representations (no floating point errors)
+
+Fields that store money:
+  ├─ plazas.master_pool_balance
+  ├─ units.due
+  ├─ units.monthly_dues_amount
+  ├─ maintenance_posts.cost
+  ├─ special_assessments.required_amount
+  ├─ special_assessments.shortfall
+  ├─ special_assessments.per_unit_amount
+  ├─ special_assessments.current_balance
+  ├─ plaza_settings.maintenance_approval_threshold
+  ├─ plaza_settings.monthly_dues_amount
+  ├─ plaza_settings.late_fee_percentage
+  ├─ payments.amount
+  ├─ transaction_logs.amount
+  ├─ transaction_logs.balance_before
+  └─ transaction_logs.balance_after
+
+================================================================================
+                        HOW ROLES INTERACT WITH DATA
+================================================================================
+
+ADMIN can:
+  ├─ Create/read/update/delete: users, plaza_settings
+  ├─ Create/update: maintenance_posts (any amount)
+  ├─ Create: special_assessments (needs Chairman approval)
+  ├─ Update: tickets (status), units (payment status)
+  ├─ View: audit_logs & transaction_logs (see all actions & financial movements)
+  ├─ Create: broadcasts (both routine and urgent)
+  ├─ Upload: files to maintenance & tickets (via attachments table)
+  └─ Approve: maintenance/assessments if they self-approve (override)
+
+CHAIRMAN can:
+  ├─ Read-only: management_dashboard, tickets, maintenance_posts
+  ├─ Approve/reject: special_assessments
+  ├─ Approve/reject: maintenance_posts (if >threshold)
+  ├─ Create: broadcasts (urgent only)
+  ├─ View: files attached to maintenances & tickets
+  └─ Cannot: view audit_logs, delete anything, create users
+
+ASSISTANT can:
+  ├─ Create: maintenance_posts (if <threshold, auto-approves)
+  ├─ Upload: files to maintenance_posts
+  ├─ Create: payments (record when residents pay)
+  ├─ Create: tickets (on behalf of residents)
+  ├─ Create: broadcasts (routine only)
+  ├─ Read-only: financial data
+  └─ Cannot: approve anything, delete, view audit_logs
+
+MEMBER can:
+  ├─ Read: own unit dashboard
+  ├─ Create: tickets (submit complaints with photos)
+  ├─ Upload: files to tickets (complaint photos)
+  ├─ Read: maintenance_posts (transparency feed - see all attachments)
+  ├─ Create: payments (pay own dues)
+  ├─ Read: notifications (personal)
+  ├─ Update: notifications (mark as read)
+  └─ Cannot: see other residents' data, approve, delete, create users
+
+================================================================================
+                        SEPARATE TABLES FOR ATTACHMENTS
+================================================================================
+
+WHY SEPARATE TABLES FOR FILES?
+
+✗ ANTI-PATTERN (Don't do this):
+  maintenance_posts {
+    id,
+    title,
+    cost,
+    image_urls: ['url1', 'url2', 'url3']  ← JSON array (bad)
+    photo_count: 3                         ← Denormalized count (bad)
+  }
+
+✓ BEST PRACTICE (Do this):
+  maintenance_posts {
+    id,
+    title,
+    cost,
+    attachments: has_many maintenance_attachments
+  }
+
+  maintenance_attachments {
+    id,
+    maintenance_post_id (foreign key),
+    file_url,
+    file_type (mime type: image/jpeg, video/mp4, etc.)
+    file_name,
+    file_size_bytes (track storage),
+    uploaded_by (who uploaded - audit trail),
+    uploaded_at
+  }
+
+BENEFITS OF SEPARATE TABLES:
+  ├─ Clear separation of concerns
+  ├─ Audit trail (who uploaded what file?)
+  ├─ Query flexibility:
+  │  ├─ "Find all PDFs uploaded by this user"
+  │  ├─ "Show me total storage used per plaza"
+  │  ├─ "How many video attachments in tickets?"
+  │  └─ "List all files uploaded by User X on Date Y"
+  ├─ Storage tracking (which files use most space?)
+  ├─ Relational integrity (proper foreign keys)
+  ├─ Follows database normalization rules
+  ├─ Scales better with thousands of attachments
+  ├─ Easy to add file expiry policies
+  ├─ Easy to delete files and clean up metadata
+  └─ One attachment per row (simpler logic)
+
+WHERE APPLIED:
+  ├─ maintenance_posts ← maintenance_attachments
+  └─ tickets ← ticket_attachments
+
+================================================================================
+                        FINANCIAL AUDIT PATTERN
+================================================================================
+
+TWO SEPARATE AUDIT TABLES:
+
+1. AUDIT_LOGS (What action happened?)
+   └─ Tracks: who did what, when, with before/after snapshots
+   └─ Example: "Admin created maintenance post #123"
+
+2. TRANSACTION_LOGS (How did money move?)
+   └─ Tracks: every credit and debit with balance snapshots
+   └─ Example: "Debit Rs. 12,500, balance 245,000 → 232,500"
+
+WHY TWO TABLES?
+
+✗ OLD WAY (Problematic):
+  All financial changes mixed into audit_logs:
+  └─ Hard to query: "What financial transactions happened?"
+  └─ Hard to reconcile: "Prove balance changed correctly"
+  └─ Compliance issues: "Show financial audit trail"
+
+✓ NEW WAY (Best Practice):
+  Separate transaction_logs for finances:
+  └─ Easy to query: SELECT * FROM transaction_logs WHERE plaza_id = X
+  └─ Easy to reconcile: sum(credits) - sum(debits) = balance
+  └─ Compliance: "Here's every rupee in/out"
+
+EXAMPLE FLOW:
+
+Admin logs maintenance for Rs. 12,500:
+
+  AUDIT_LOG created:
+    ├─ action: 'create_maintenance'
+    ├─ resource_type: 'maintenance'
+    ├─ resource_id: 'maint-123'
+    ├─ user_id: admin-xyz
+    ├─ before_state: {cost: null, status: null}
+    ├─ after_state: {cost: 12500, status: 'IMPLEMENTED'}
+    └─ created_at: 2024-03-18T10:00:00Z
+
+  TRANSACTION_LOG created:
+    ├─ transaction_type: 'debit'
+    ├─ amount: 12500
+    ├─ description: 'Maintenance: Fixed hallway pipe'
+    ├─ related_resource_type: 'maintenance_post'
+    ├─ related_resource_id: 'maint-123'
+    ├─ balance_before: 245000
+    ├─ balance_after: 232500 ✓ (proof)
+    ├─ recorded_by: admin-xyz
+    └─ created_at: 2024-03-18T10:00:00Z
+
+AUDIT QUESTIONS ANSWERED:
+  ├─ Q: "What actions happened in plaza on March 18?"
+  │  A: SELECT * FROM audit_logs WHERE plaza_id = X AND created_at >= '2024-03-18'
+
+  ├─ Q: "Prove balance went from 245K to 232.5K"
+  │  A: SELECT * FROM transaction_logs WHERE balance_before = 245000 AND balance_after = 232500
+
+  ├─ Q: "What was the balance 30 days ago?"
+  │  A: SELECT balance_before FROM transaction_logs ORDER BY created_at DESC LIMIT 30
+
+  ├─ Q: "How much money came in/out last month?"
+  │  A: SELECT SUM(IF(transaction_type='credit',amount,0)) as income,
+           SUM(IF(transaction_type='debit',amount,0)) as expenses
+       FROM transaction_logs WHERE plaza_id = X AND created_at >= '2024-02-18'
+
+  └─ Q: "Who approved this maintenance expense?"
+     A: SELECT * FROM audit_logs WHERE resource_id = 'maint-123' AND action = 'approve_maintenance'
+
+================================================================================
+                          FILE STORAGE ARCHITECTURE
+================================================================================
+
+Database stores: URLs only (strings)
+  └─ file_url: "https://cdn.s3.amazonaws.com/plaza-123/maint-456/image1.jpg"
+
+Actual files stored: On CDN (S3, Firebase, Cloudinary, etc.)
+  ├─ Never store binary files in database
+  ├─ Database tracks metadata only:
+  │  ├─ file_url (CDN URL)
+  │  ├─ file_type (mime type for queries)
+  │  ├─ file_size_bytes (track storage)
+  │  ├─ file_name (original name)
+  │  └─ uploaded_by (audit trail)
+  └─ When you need to delete: query attachments, delete from CDN, delete record
+
+WHY THIS ARCHITECTURE?
+  ├─ Database bloat avoided (no binary data)
+  ├─ File access faster from CDN (geo-distributed)
+  ├─ Can serve images from multiple regions
+  ├─ Can version, archive, or delete files independently
+  ├─ Metadata stored in DB for queries
+  ├─ Actual files on CDN (infinitely scalable)
+  ├─ Cheaper storage (S3 is cheaper than database)
+  └─ Easy to implement cache invalidation
+
+WORKFLOW:
+  1. Admin uploads photo for maintenance
+  2. File goes to CDN → gets URL back
+  3. maintenance_attachments.file_url = that URL
+  4. Database stores URL + metadata (type, size, uploader)
+  5. When resident views maintenance: load image from CDN URL
+  6. When admin deletes maintenance: delete from CDN, delete record from DB
+
+================================================================================
+                          RELATIONSHIP EXAMPLES
+================================================================================
+
+One Maintenance Post → Many Attachments:
+  maintenance_posts: 1 ──→ ∞ maintenance_attachments
+  Example: "Fixed hallway pipe" has 3 photos (before, during, after)
+
+One Ticket → Many Attachments:
+  tickets: 1 ──→ ∞ ticket_attachments
+  Example: Complaint about water damage has 2 photos
+
+One Unit → Many Payments (over months/years):
+  units: 1 ──→ ∞ payments
+  Example: Apt 301 pays Rs. 5,000 every month = 12 payments/year
+
+One User → Many Device Tokens (phone, tablet, web):
+  users: 1 ──→ ∞ device_tokens
+  Example: Hammad logged in on iPhone + iPad = 2 tokens
+
+One Plaza → Many Transaction Logs (financial movements):
+  plazas: 1 ──→ ∞ transaction_logs
+  Example: Every maintenance/payment/assessment creates a transaction log
+
+One Plaza → Many Audit Logs (all actions):
+  plazas: 1 ──→ ∞ audit_logs
+  Example: Every login/create/approve action logged
+
+One Special Assessment → Many Notifications (one per resident):
+  special_assessments: 1 ──→ ∞ notifications
+  Example: Generator assessment triggers 18 notifications (one per occupied unit)
+
+One Ticket → One Maintenance Post (optional):
+  tickets: 1 → 0 or 1 → maintenance_posts
+  Example: Complaint about leaking pipe may be converted to maintenance work
+
+================================================================================
+                        DATABASE SCHEMA SUMMARY TABLE
+================================================================================
+
+TIER 1: FOUNDATIONAL
+├─ plazas (15 fields)
+└─ plaza_settings (7 fields)
+
+TIER 2: USERS & ROLES
+├─ users (12 fields)
+└─ device_tokens (8 fields)
+
+TIER 3: UNITS & RESIDENTS
+└─ units (14 fields)
+
+TIER 4: MAINTENANCE & FINANCIAL
+├─ maintenance_posts (16 fields)
+├─ maintenance_attachments (7 fields) ⭐ NEW
+├─ special_assessments (14 fields)
+└─ payments (11 fields)
+
+TIER 5: TICKETS & COMPLAINTS
+├─ tickets (14 fields)
+└─ ticket_attachments (7 fields) ⭐ NEW
+
+TIER 6: NOTIFICATIONS & COMMUNICATION
+├─ notifications (12 fields)
+└─ broadcasts (7 fields)
+
+TIER 7: AUDIT & COMPLIANCE
+├─ audit_logs (12 fields)
+└─ transaction_logs (10 fields) ⭐ NEW
+
+TOTAL: 15 tables (13 original + 2 new for attachments/financial audit)
+
+================================================================================
+
+This blueprint is production-grade with:
+✅ Proper separation of concerns (attachments in separate tables)
+✅ Polished relationships (7 tiers, clear organization)
+✅ Financial audit trail (transaction_logs separate from audit_logs)
+✅ Scalable attachment handling (files on CDN, metadata in DB)
+✅ Complete business rule support
+✅ Full audit trail (who did what, when, with evidence)
+✅ Atomic transaction guarantees (all-or-nothing operations)
+
+Ready to build! 🚀
+
+================================================================================
+
+SOme change
+ADMIN (Super Admin - across all plazas)
+  └─ Can manage multiple plazas
+  └─ Creates plaza configurations
+  └─ Views audit logs across plazas
+
+FOR EACH PLAZA:
+  ├─ CHAIRMAN (Plaza-specific)
+  │  └─ Approves ALL payments
+  │  └─ Approves all maintenance >threshold
+  │  └─ Approves special assessments
+  │  └─ Approves resident refunds
+  │
+  └─ MEMBERS (Residents)
+     └─ Submit payment (but needs Chairman approval)

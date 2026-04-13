@@ -1,0 +1,101 @@
+models:
+
+  Supplier:
+    name: string
+    # phone: string:20 nullable
+    # address: text nullable
+    timestamps: true
+    relationships:
+      hasMany: Purchase, SupplierPayment
+
+  Material:
+    name: string
+    unit: string
+    stock_quantity: decimal:15,2 default:0
+    avg_rate: decimal:15,2 default:0
+    timestamps: true
+    relationships:
+      hasMany: Purchase, ProductionMaterial
+
+  RawBrick:
+    production_date: date
+    quantity_produced: integer
+    timestamps: true
+
+  ProductionBatch:
+    batch_no: string unique
+    production_date: date
+    raw_bricks_used: integer
+    bricks_produced: integer
+    labor_cost: decimal:15,2 default:0
+    fuel_cost: decimal:15,2 default:0
+    total_material_cost: decimal:15,2 default:0
+    total_expense_cost: decimal:15,2 default:0
+    total_cost: decimal:15,2 default:0
+    timestamps: true
+    relationships:
+      hasMany: ProductionMaterial, Sale, Expense
+
+  ProductionMaterial:
+    production_batch_id: id
+    material_id: id
+    quantity_used: decimal:15,2
+    rate_at_time: decimal:15,2
+    total_cost: decimal:15,2
+    timestamps: true
+    relationships:
+      belongsTo: ProductionBatch, Material
+
+  Purchase:
+    supplier_id: id
+    material_id: id
+    quantity: decimal:15,2
+    rate: decimal:15,2
+    total: decimal:15,2
+    purchase_date: date
+    timestamps: true
+    relationships:
+      belongsTo: Supplier, Material
+      hasMany: SupplierPayment
+
+  SupplierPayment:
+    supplier_id: id
+    purchase_id: id nullable
+    amount: decimal:15,2
+    payment_date: date
+    note: text nullable
+    timestamps: true
+    relationships:
+      belongsTo: Supplier, Purchase
+
+  Sale:
+    customer_id: id
+    production_batch_id: id
+    quantity_sold: integer
+    rate_per_brick: decimal:15,2
+    total: decimal:15,2
+    sale_date: date
+    timestamps: true
+    relationships:
+      belongsTo: Customer, ProductionBatch
+      hasMany: CustomerPayment
+
+  CustomerPayment:
+    customer_id: id
+    sale_id: id nullable
+    amount: decimal:15,2
+    payment_date: date
+    note: text nullable
+    timestamps: true
+    relationships:
+      belongsTo: Customer, Sale
+
+  Expense:
+    production_batch_id: id nullable
+    expense_type: string
+    amount: decimal:15,2
+    expense_date: date
+    description: text nullable
+    timestamps: true
+    relationships:
+      belongsTo: ProductionBatch

@@ -1,0 +1,43 @@
+models:
+  Plaza:
+    name: string
+    city: string
+    country: string
+    total_units: integer
+    master_pool_balance: decimal:15,2
+    currency_code: string:3
+    relationships:
+      hasMany: User, Unit, MaintenancePost
+
+  Payment:
+    unit_id: id
+    amount: decimal:15,2
+    status: enum:PENDING_APPROVAL,APPROVED,REJECTED
+    recorded_by: id:user
+    approved_by: id:user nullable
+    payment_month: string # YYYY-MM
+
+controllers:
+  Plaza:
+    index:
+      query: all
+      render: plaza.index
+    store:
+      validate: name, city, country, total_units, master_pool_balance, currency_code
+      save: plaza
+      flash: plaza.saved
+      redirect: plaza.index
+
+  Payment:
+    store:
+      validate: unit_id, amount, payment_month
+      save: payment
+      send: PaymentSubmittedNotification to:chairman
+      redirect: dashboard
+
+    # Chairman Approval Logic
+    update:
+      validate: status, approved_by
+      update: payment
+      flash: payment.updated
+      redirect: chairman.dashboard

@@ -1,0 +1,23 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+  <rect width="96" height="96" rx="16" fill="#1C64F2"/>
+  <!-- Main tower -->
+  <rect x="31" y="14" width="26" height="56" rx="3" fill="#ffffff"/>
+  <!-- Left wing -->
+  <rect x="14" y="28" width="19" height="42" rx="3" fill="#ffffff"/>
+  <!-- Right wing -->
+  <rect x="55" y="28" width="19" height="42" rx="3" fill="#ffffff"/>
+  <!-- Ground bar -->
+  <rect x="11" y="66" width="74" height="7" rx="3" fill="#ffffff"/>
+  <!-- Windows main tower -->
+  <rect x="37" y="22" width="6" height="7" rx="1" fill="#1C64F2"/>
+  <rect x="47" y="22" width="6" height="7" rx="1" fill="#1C64F2"/>
+  <rect x="37" y="34" width="6" height="7" rx="1" fill="#1C64F2"/>
+  <rect x="47" y="34" width="6" height="7" rx="1" fill="#1C64F2"/>
+  <rect x="37" y="46" width="6" height="7" rx="1" fill="#1C64F2"/>
+  <rect x="47" y="46" width="6" height="7" rx="1" fill="#1C64F2"/>
+  <!-- Windows wings -->
+  <rect x="19" y="37" width="6" height="6" rx="1" fill="#1C64F2"/>
+  <rect x="19" y="48" width="6" height="6" rx="1" fill="#1C64F2"/>
+  <rect x="61" y="37" width="6" height="6" rx="1" fill="#1C64F2"/>
+  <rect x="61" y="48" width="6" height="6" rx="1" fill="#1C64F2"/>
+</svg>

@@ -1,0 +1,100 @@
+Views
+Suppliers
+Customers
+Products
+Purchase
+Sale
+Cash In Hand Accounts
+Bank Account
+Cost
+Expense
+
+Workflow
+Suppliers:name,fathername(optional),opening balance
+Products:title,description(optional)
+Purchase:product_id,supplier_id,weight,qty,w*q=amount
+when we did purchase obviously amount will be deducted from somewhere bank,cash,Expense
+and will go to selected suppliers account
+and stock will increase accordingly default we have only one product name as sariya and we will use it throughout as product_id from product
+Customers:name,fathername(optional),opening balance
+Sale
+When we did a sale select customer,means sariya default ,weight,qty,amount will go to selected customers account
+obviously this amount will increase our some accounr bank ,cash ,expense we will select we want to
+Cash In Hand Accounts
+Cost (it must be seperate requested from user to only calculate the epxense of labour ,transport etc)
+Expense
+than calculate their profit accordingly
+each customer and suppliers ledger are also maintaining and their history of transactions accordingly
+
+Modal
+Suppliers:name,fathername(optional),opening balance
+SupplierPayment:supplier_id,amount,credit_debit
+Customer:name,fathername(optional),opening balance
+CustomerPayment:customer_id,amount:credit_debit
+Products:title,description(optional)
+ProductHistory
+Purchases
+Customers
+CustomerPayment
+Sale
+Sale=Product Usage
+Other Account type cash,expense,cost with their related balance
+Account History will track in which account when money comes in goes out as credit credit_debit
+Profit will come out of it accordingly
+
+
+MOdal
+Account:id,name,type,opening_balance,balance_type
+Transaction(telss what happened):id,
+AccountEntry(System-generated only,Handles ALL balance changes):
+Product
+ProductHistory Only stock movement — nothing else
+Purchases from which supplier,how much paid,how much remaining on him,which transaction transaction_id
+PurchaseItem how many purchases made of which product and on how much weight qty rate
+Sale to which customer whats total amount need to be paid and how much he paid and how much is remaining on him
+SaleItem how many items are sold on which rate qty weight
+Expenses
+
+System Flow
+HOW SYSTEM WORKS (SHORT & CLEAR)
+🟢 Purchase
+create transaction
+create purchase
+create account_entries:
+cash/bank → credit
+supplier → credit (if unpaid)
+create product_histories (+qty)
+🔵 Sale
+create transaction
+create sale
+create account_entries:
+cash/bank → debit
+customer → debit (if unpaid)
+create product_histories (-qty)
+💸 Expense
+create transaction
+create expense
+create account_entries:
+expense → debit
+cash/bank → credit
+
+balance_type indicates the natural behavior of an account:
+
+Debit-type account → normally increases when money comes in
+Credit-type account → normally increases when money goes out
+
+⚖️ How to assign balance_type for supplier/customer
+Account Type	Balance Type	Explanation
+Supplier	credit	Supplier is someone you owe money to. When you purchase, your debt increases → credit. When you pay them, your debt decreases → debit.
+Customer	debit	Customer is someone who owes you money. When you sell, their owed amount increases → debit. When they pay, it decreases → credit.
+Cash / Bank	debit	Money you have → debit-type
+Expense	debit	Spending → debit-type
+
+
+Stick to this everywhere:
+
+Money coming in → debit cash
+Money going out → credit cash
+You owe someone → credit (supplier)
+Someone owes you → debit (customer)
+Expense → always debit

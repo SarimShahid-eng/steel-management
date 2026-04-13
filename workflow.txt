@@ -1,0 +1,24 @@
+How Each Role Works - Paragraph Form
+ADMIN can do everything without asking anyone. The Admin can create new users, delete users, configure plaza settings, log maintenance of any amount (whether Rs. 5,000 or Rs. 500,000), create special assessments when funds run short, respond to resident complaints and mark them as resolved, log resident payments, send broadcasts to all residents (both routine and urgent), view the entire financial dashboard, see audit logs of every action taken in the system, and override any decision if needed for emergencies (with the action being logged). Essentially, Admin has unrestricted access to all 20+ API endpoints and is the ultimate authority in the plaza.
+CHAIRMAN can only approve or reject big decisions that Admin proposes, but cannot initiate
+operations themselves. When Admin logs maintenance costing more than Rs. 50,000, it goes into a
+"Pending Approval" state and Chairman receives a notification. Chairman can then review the details, see
+photos and cost justifications, and either approve it (which releases the funds) or
+reject it (which requires Admin to find alternatives). Similarly, when Admin creates a special assessment (like the Rs. 973 per unit for the generator),
+Chairman reviews the math, the necessity, and the fairness of the distribution before approving. Chairman can also see the management dashboard in read-only mode, view all tickets and maintenance records, review financial reports, and approve urgent broadcasts. Chairman cannot directly log maintenance, create special assessments, manage users, or spend money themselves - they are purely an approval checkpoint.
+ASSISTANT can only submit data entry tasks that don't require approval or
+financial authority. The Assistant can log maintenance costs under the Rs. 50,000
+threshold (which auto-approves), record resident payments when someone pays cash to the
+Admin (the system confirms the payment atomically), create tickets on behalf of residents who
+call with complaints, send routine broadcasts to residents, and view financial data in read-only mode to answer resident questions. However, Assistant cannot approve anything, cannot submit special assessments, cannot modify payment amounts, cannot override any decisions, and cannot access sensitive system functions like audit logs or user management. Assistant is purely a support role for data entry and resident support.
+MEMBER (Residents) can only interact with their own personal information and
+the public transparency feed. A Member can view their own unit's dashboard showing their
+payment status, how much they owe, their payment history, and recent maintenance affecting the plaza. They can submit complaints
+about building issues with photos and descriptions, which automatically routes to Admin. They can view the transparency feed showing all maintenance work done on the plaza with costs and photos (so they understand where their money goes). They can check their notifications about dues reminders, payment confirmations, and announcements. They can pay their own dues through the app,
+which confirms atomically. A Member cannot see other residents' financial data, cannot approve anything, cannot log maintenance, cannot override decisions, and cannot access any admin functions. Member access is strictly limited to their own apartment and the public maintenance transparency feed.
+
+DBHOST:sdb-85.hosting.stackcp.net
+DbUsername:gexton_plaza_manage-35303936fb5d
+DbPassword:awqlco189z
+Username:gexton_plaza_manage
+UsernamePassword:=k:PE,AqfN8x

@@ -1,0 +1,30 @@
+<svg width="400" height="80" viewBox="0 0 400 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon badge -->
+  <rect x="0" y="0" width="80" height="80" rx="14" fill="#1C64F2"/>
+  <!-- Main tower -->
+  <rect x="27" y="14" width="22" height="52" rx="3" fill="#ffffff"/>
+  <!-- Left wing -->
+  <rect x="13" y="28" width="16" height="38" rx="3" fill="#ffffff"/>
+  <!-- Right wing -->
+  <rect x="47" y="28" width="16" height="38" rx="3" fill="#ffffff"/>
+  <!-- Ground bar -->
+  <rect x="10" y="62" width="60" height="6" rx="3" fill="#ffffff"/>
+  <!-- Windows main tower -->
+  <rect x="32" y="21" width="5" height="6" rx="1" fill="#1C64F2"/>
+  <rect x="41" y="21" width="5" height="6" rx="1" fill="#1C64F2"/>
+  <rect x="32" y="32" width="5" height="6" rx="1" fill="#1C64F2"/>
+  <rect x="41" y="32" width="5" height="6" rx="1" fill="#1C64F2"/>
+  <rect x="32" y="43" width="5" height="6" rx="1" fill="#1C64F2"/>
+  <rect x="41" y="43" width="5" height="6" rx="1" fill="#1C64F2"/>
+  <!-- Windows wings -->
+  <rect x="17" y="36" width="5" height="5" rx="1" fill="#1C64F2"/>
+  <rect x="17" y="46" width="5" height="5" rx="1" fill="#1C64F2"/>
+  <rect x="51" y="36" width="5" height="5" rx="1" fill="#1C64F2"/>
+  <rect x="51" y="46" width="5" height="5" rx="1" fill="#1C64F2"/>
+  <!-- Divider -->
+  <line x1="94" y1="10" x2="94" y2="70" stroke="#E5E7EB" stroke-width="1"/>
+  <!-- Title -->
+  <text x="108" y="42" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="24" fill="#1C64F2" letter-spacing="-0.5">Plaza Management</text>
+  <!-- Subtitle -->
+  <text x="110" y="60" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-weight="400" font-size="10" fill="#6B7280" letter-spacing="2.5">PROPERTY &amp; FACILITIES</text>
+</svg>
