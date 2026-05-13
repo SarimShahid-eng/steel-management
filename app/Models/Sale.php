@@ -23,7 +23,7 @@ class Sale extends Model
         'received_amount',
         'remaining_amount',
         'date',
-        'payment_account_id'
+        'payment_account_id',
         // 'customer_account_id_id',
     ];
 
@@ -47,12 +47,22 @@ class Sale extends Model
 
     public function customerAccount(): BelongsTo
     {
-        return $this->belongsTo(Account::class,'customer_account_id');
+        return $this->belongsTo(Account::class, 'customer_account_id');
+    }
+
+    public function receivedAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'payment_account_id');
     }
 
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function accountEntries()
+    {
+        return $this->hasMany(AccountEntry::class, 'transaction_id','transaction_id');
     }
 
     public function saleItems(): HasMany

@@ -20,10 +20,10 @@ class BankStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'update_id' => ['nullable'],
+            'update_id' => ['nullable', 'exists:accounts,id'],
             'name' => ['required'],
             'type' => ['required'],
-            'opening_balance' => ['required'],
+            'opening_balance' => ['required_without:update_id'],
         ];
     }
 }

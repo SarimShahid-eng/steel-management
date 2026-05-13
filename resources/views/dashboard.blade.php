@@ -1,12 +1,13 @@
 @extends('partials.app',['title'=>'Dashboard'])
 @section('content')
-    <div class="col-span-12 space-y-6 xl:col-span-12">
-        {{-- @include('partials.metric-group.metric-group-01') --}}
+<div class="col-span-12 space-y-6 xl:col-span-12">
+    @include('partials.metric-group.metric-group-01')
         <!-- Metric Group One -->
         <!-- Metric Group One -->
 
         <!-- ====== Chart One Start -->
-        {{-- @include('partials.chart.chart-01') --}}
+        @include('partials.chart.chart-01')
+        @include('partials.chart.purchase-chart')
         <!-- ====== Chart One End -->
     </div>
     {{-- <div class="col-span-12 xl:col-span-5">
@@ -33,4 +34,8 @@
 
         <!-- ====== Table One End -->
     {{-- </div> --}}
+    {{-- @dd('ss') --}}
+
 @endsection
+    {{-- @dd('ss') --}}
+

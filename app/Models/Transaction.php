@@ -32,13 +32,30 @@ class Transaction extends Model
             'date' => 'date',
         ];
     }
-    public function getVoucherAttribute() {
-    return match($this->type) {
-        'purchase'   => 'PV-' . $this->voucher_no,
-        'sale'       => 'SV-' . $this->voucher_no,
-        'expense'    => 'EV-' . $this->voucher_no,
-        'payment'    => 'PMT-' . $this->voucher_no,
-        'adjustment' => 'ADJ-' . $this->voucher_no,
-    };
-}
+
+    public function getVoucherAttribute()
+    {
+        return match ($this->type) {
+            'purchase' => 'PV-'.$this->voucher_no,
+            'sale' => 'SV-'.$this->voucher_no,
+            'expense' => 'EV-'.$this->voucher_no,
+            'payment' => 'PMT-'.$this->voucher_no,
+            'adjustment' => 'ADJ-'.$this->voucher_no,
+        };
+    }
+
+    public function entries()
+    {
+        return $this->hasMany(AccountEntry::class);
+    }
+
+    public function expenseEntries()
+    {
+        return $this->hasMany(AccountEntry::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
 }

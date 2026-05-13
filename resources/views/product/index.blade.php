@@ -65,8 +65,15 @@
                                     {{ $products->firstItem() + $index }}
                                 </td>
 
-                                <td class="py-3 px-4 font-medium text-gray-800 dark:text-white/90">
+                                <td class="py-3 px-4 font-medium ">
+                                    <span class="text-gray-800 dark:text-white/90">
+
+                                    </span>
                                     {{ $product->name }}
+                                    <span class="text-gray-600 dark:text-white/90">
+
+                                        {{ $product->type?'/'.$product->type:'' }}
+                                    </span>
                                 </td>
                                 <td class="py-3 px-4 font-medium text-gray-800 dark:text-white/90">
                                     {{ $product->description }}

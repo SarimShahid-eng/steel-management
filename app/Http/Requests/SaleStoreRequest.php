@@ -21,13 +21,13 @@ class SaleStoreRequest extends FormRequest
     {
         return [
             'customer_account_id' => ['required', 'integer', 'exists:accounts,id'],
-            'payment_type' => ['required', 'in:cash,bank,credit'],
+            'payment_type' => ['required','in:cash,bank,credit'],
             'payment_account_id' => ['nullable', 'required_if:payment_type,cash', 'required_if:payment_type,bank', 'exists:accounts,id'],
             'notes' => ['nullable', 'string'],
             'date' => ['required', 'date'],
-            'received_amount' => ['required', 'numeric', 'min:0'],
+            'received_amount' => ['required_if:payment_type,cash', 'required_if:payment_type,bank' , 'numeric', 'min:0'],
             'total_amount' => ['required', 'numeric', 'min:1'],
-            'remaining_amount' => ['required', 'numeric', 'min:0'],
+            'remaining_amount' => ['required', 'numeric'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.weight' => ['required', 'numeric', 'min:1'],

@@ -26,8 +26,10 @@
             {{-- @php
                 $productId = 1;
             @endphp --}}
-            <form method="POST" action="{{ route('sale.store') }}" x-data="saleForm()">
+            <form method="POST" action="{{ !isset($sale) ? route('sale.store') : route('sale.update') }}"
+                x-data="saleForm()">
                 @csrf
+                <input type="hidden" name="update_id" value="{{ @$sale->id }}">
 
                 {{-- ── SECTION 1: Sale Info ── --}}
                 <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] mb-5">
@@ -153,7 +155,7 @@
                                             'border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900' => !$errors->has(
                                                 'payment_account_id'),
                                         ])>
-                                        <option value="" disabled selected
+                                        <option value="" disabled
                                             x-text="accountsLoading ? 'Loading...' : 'Select account'"></option>
                                         <template x-for="account in paymentAccounts" :key="account.id">
                                             <option :value="account.id" x-text="account.name"></option>
@@ -239,11 +241,12 @@
                                     <div class="col-span-6 sm:col-span-3">
                                         <label class="mb-1 block text-xs text-gray-500 sm:hidden">Product</label>
                                         <select :name="`items[${index}][product_id]`" x-init="$el.value = item.product_id ?? ''"
+                                            x-model="item.product_id"
                                             class="shadow-theme-xs rounded-lg border w-full border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:ring-3 focus:outline-hidden focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                             <option value="">Select Product</option>
                                             @foreach ($products as $product)
                                                 <option value="{{ $product->id }}" {{-- @selected(request($product) == $option['value']) --}}>
-                                                    {{ $product->name }}
+                                                    {{ $product->name }} {{ $product->type ?'--' .$product->type : '' }}
                                                 </option>
                                             @endforeach
                                         </select>
@@ -267,15 +270,16 @@
                                         <label class="mb-1 block text-xs text-gray-500 sm:hidden">Weight (kg)</label>
                                         <input type="number" :name="`items[${index}][weight]`"
                                             x-model.number="item.weight" @input="calcAmount(item)" min="0"
-                                            step="1" placeholder="0"
+                                            step="any" placeholder="0"
                                             class="dark:bg-dark-900 shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-800 text-right placeholder:text-gray-400 focus:ring-3 focus:outline-hidden focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                     </div>
 
                                     {{-- Rate --}}
                                     <div class="col-span-6 sm:col-span-3">
                                         <label class="mb-1 block text-xs text-gray-500 sm:hidden">Rate / kg</label>
-                                        <input type="number" :name="`items[${index}][rate]`" x-model.number="item.rate"
-                                            @input="calcAmount(item)" min="0" step="1" placeholder="0"
+                                        <input type="number" step="any" :name="`items[${index}][rate]`"
+                                            x-model.number="item.rate" @input="calcAmount(item)" min="0"
+                                            step="1" placeholder="0"
                                             class="dark:bg-dark-900 shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-800 text-right placeholder:text-gray-400 focus:ring-3 focus:outline-hidden focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                     </div>
 
@@ -325,7 +329,8 @@
                         <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
                             {{-- Received Amount --}}
-                            <div class="w-full sm:max-w-xs">
+                            <div :class="(paymentType === 'bank' || paymentType === 'cash') ? 'visible' : 'invisible'"
+                                class="w-full sm:max-w-xs">
                                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                                     Received Amount <span class="text-error-500">*</span>
                                 </label>
@@ -452,12 +457,12 @@
         <script>
             function saleForm() {
                 return {
-                    customerId: '{{ old('customer_account_id', '') }}',
-                    paymentType: '{{ old('payment_type', '') }}',
-                    paymentAccountId: '{{ old('payment_account_id', '') }}',
-                    receivedAmount: {{ old('received_amount', 0) }},
-                    totalAmount: 0,
-                    remainingAmount: 0,
+                    customerId: '{{ old('customer_account_id', $sale->customer_account_id ?? '') }}',
+                    paymentType: '{{ old('payment_type', isset($sale) ? $sale->receivedAccount->type ?? 'credit' : '') }}',
+                    // paymentAccountId: '{{ old('payment_account_id', $sale->payment_account_id ?? '') }}',
+                    receivedAmount: {{ old('received_amount', $sale->received_amount ?? 0) }},
+                    totalAmount: {{ old('total_amount', $sale->total_amount ?? 0) }},
+                    remainingAmount: {{ old('remaining_amount', $sale->remaining_amount ?? 0) }},
                     items: [],
                     nextId: 0,
 
@@ -466,6 +471,7 @@
 
                     init() {
                         const oldItems = @json(old('items', []));
+                        const dbItems = @json($sale->saleItems ?? []);
                         if (oldItems.length > 0) {
                             this.items = oldItems.map((item, i) => ({
                                 id: i,
@@ -476,13 +482,27 @@
                             }));
                             this.nextId = this.items.length;
                             this.calcTotal();
+                        } else if (dbItems.length > 0) {
+                            // Load from Database for Edit
+                            this.items = dbItems.map((item, i) => ({
+                                id: i,
+                                product_id: item.product_id,
+                                weight: parseFloat(item.weight),
+                                rate: parseFloat(item.rate),
+                                amount: parseFloat(item.amount),
+                            }));
+                            this.nextId = this.items.length;
+                            this.calcTotal();
                         } else {
                             this.addItem();
                         }
                         this.calcRemaining();
 
                         if (this.paymentType === 'cash' || this.paymentType === 'bank') {
-                            this.fetchAccounts(this.paymentType);
+                            this.fetchAccounts(this.paymentType).then(() => {
+                                this.paymentAccountId =
+                                    '{{ old('payment_account_id', $sale->payment_account_id ?? '') }}';
+                            });
                         }
 
                         this.$watch('paymentType', (type) => {
@@ -490,6 +510,12 @@
                             this.paymentAccounts = [];
                             if (type === 'cash' || type === 'bank') {
                                 this.fetchAccounts(type);
+                            }
+                            // as changed to credit hid the received amount div and make received amount 0
+                            // and remaining=totalAmount
+                            if (type === 'credit') {
+                                this.receivedAmount = 0;
+                                this.remainingAmount = this.totalAmount
                             }
                         });
                     },
@@ -504,6 +530,7 @@
                                 }
                             });
                             this.paymentAccounts = await res.json();
+                            return this.paymentAccounts; // Add this line
                         } catch (e) {
                             this.paymentAccounts = [];
                         } finally {
@@ -514,7 +541,7 @@
                     addItem() {
                         this.items.push({
                             id: this.nextId++,
-                              product_id: '',
+                            product_id: '',
                             // qty: null,
                             weight: null,
                             rate: null,
@@ -528,7 +555,7 @@
                     },
 
                     calcAmount(item) {
-                        item.amount = Math.round((item.weight || 0) * (item.rate || 0));
+                        item.amount = (item.weight || 0) * (item.rate || 0);
                         this.calcTotal();
                     },
 
@@ -538,13 +565,13 @@
                     },
 
                     calcRemaining() {
-                        this.remainingAmount = Math.max(0, this.totalAmount - (this.receivedAmount || 0));
+                        this.remainingAmount = (this.totalAmount || 0) - (parseFloat(this.receivedAmount) || 0);
                     },
 
                     formatNum(val) {
                         return Number(val || 0).toLocaleString('en-PK', {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 0,
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
                         });
                     },
                 }

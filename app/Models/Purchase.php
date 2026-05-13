@@ -48,17 +48,27 @@ class Purchase extends Model
 
     public function supplierAccount(): BelongsTo
     {
-        return $this->belongsTo(Account::class,'supplier_account_id');
+        return $this->belongsTo(Account::class, 'supplier_account_id');
+    }
+    public function paymentAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'payment_account_id');
     }
 
     public function transaction(): BelongsTo
     {
-        return $this->belongsTo(Transaction::class,'transaction_id');
+        return $this->belongsTo(Transaction::class, 'transaction_id');
     }
 
     public function getRemainingAmountAttribute()
     {
         return $this->total_amount - $this->paid_amount;
+    }
+
+    public function accountEntries()
+    {
+        return $this->hasMany(AccountEntry::class, 'transaction_id',
+            'transaction_id');
     }
 
     // public function supplierAccount(): BelongsTo

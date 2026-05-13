@@ -42,6 +42,26 @@ class AccountEntry extends Model
         return $this->belongsTo(Transaction::class);
     }
 
+    public function supplierAccount()
+    {
+        return $this->belongsTo(Account::class, 'account_id')->where('type', 'supplier');
+    }
+
+    public function customerAccount()
+    {
+        return $this->belongsTo(Account::class, 'account_id')->where('type', 'customer');
+    }
+
+    public function cashOrBankAccount()
+    {
+        return $this->belongsTo(Account::class, 'account_id')->whereIn('type', ['cash', 'bank']);
+    }
+
+    public function expenseAccount()
+    {
+        return $this->belongsTo(Account::class, 'account_id')->where('type', 'expense');
+    }
+
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);

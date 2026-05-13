@@ -23,6 +23,7 @@ class ProductStoreRequest extends FormRequest
         return [
             'update_id' => ['nullable', 'exists:products,id'],
             'name' => ['required', 'string', Rule::unique('products', 'name')->ignore($this->update_id)],
+            'type' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
         ];
     }

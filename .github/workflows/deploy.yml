@@ -1,0 +1,79 @@
+name: Build & Publish to deploy
+
+on:
+  push:
+    branches: [ master ]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-publish
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # we need full history for branches/worktrees
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+        # If your build outputs somewhere else, note it below (examples):
+        # - Vite(Laravel): public/build
+        # - React: build/
+        # - Vue: dist/
+
+      - name: Prepare deploy branch via worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Sync the 'deploy' branch locally
+          git fetch origin deploy:deploy || git branch deploy
+
+          # Create worktree
+          rm -rf ../deploy-wt
+          git worktree add ../deploy-wt deploy
+
+          # Sync files (Adjust --exclude as needed)
+          rsync -a --delete \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude "node_modules" \
+            ./ ../deploy-wt/
+
+          cd ../deploy-wt
+
+          # Force add the specific build folder for your VILT/TALL stack
+          if [ -d "public/build" ]; then
+            git add -f public/build
+          fi
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Build: auto-generated assets $(date -u +'%Y-%m-%d %H:%M')"
+            git push origin deploy
+          fi
+
+          cd -
+          git worktree remove ../deploy-wt
+

@@ -24,3 +24,6 @@ Homestead.yaml
 Thumbs.db
 draft.yaml
 .blueprint
+/public/admin_assets/backup-profuct
+# /public/admin_assets/css
+# /public/admin_assets/images

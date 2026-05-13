@@ -37,26 +37,30 @@
                 <form method="GET" action="{{ route('sale.index') }}">
                     <div class="flex items-center gap-2">
 
-                        <x-filter-toolbar :dateRange="false" placeholder="Search customer/voucher..." />
+                        <x-filter-toolbar :dateRange="false" :singleDate="true" dateName="fromDate"
+                            placeholder="Search customer/voucher..." />
                     </div>
                 </form>
             </div>
 
+
             {{-- TABLE --}}
-            <div class="custom-scrollbar max-w-full overflow-x-auto px-5 sm:px-6">
+            <div class="custom-scrollbar max-w-full overflow-x-auto px-5 sm:px-6" x-data="saleModal()">
+                <x-sale-product-modal />
                 <table class="min-w-full">
 
                     <thead class="border-y border-gray-100 py-3">
                         <tr>
                             <th class="py-3 pr-4 text-left text-theme-sm text-gray-500">#</th>
                             <th class="py-3 px-4 text-left text-theme-sm text-gray-500">Voucher</th>
+                            <th class="py-3 px-4 text-left text-theme-sm text-gray-500">Type</th>
                             <th class="py-3 px-4 text-left text-theme-sm text-gray-500">Date</th>
                             <th class="py-3 px-4 text-left text-theme-sm text-gray-500">Customer</th>
                             <th class="py-3 px-4 text-right text-theme-sm text-gray-500">Total</th>
                             <th class="py-3 px-4 text-right text-theme-sm text-gray-500">Received</th>
                             <th class="py-3 px-4 text-right text-theme-sm text-gray-500">Remaining</th>
                             <th class="py-3 px-4 text-center text-theme-sm text-gray-500">Status</th>
-                            {{-- <th class="py-3 px-4 text-center text-theme-sm text-gray-500">Actions</th> --}}
+                            <th class="py-3 px-4 text-center text-theme-sm text-gray-500">Actions</th>
                         </tr>
                     </thead>
 
@@ -73,6 +77,10 @@
                                     <span class="font-mono text-sm font-medium text-gray-800 dark:text-white/90">
                                         SV-{{ $sale->transaction->voucher_no }}
                                     </span>
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                                    {{ $sale->receivedAccount ? $sale->receivedAccount->type . '/' . $sale->receivedAccount->name : 'credit' }}
+                                    {{-- {{ $sale->receivedAccount->type }}{{ in_array($sale->receivedAccount->type, ['cash', 'bank']) ? '/' . $sale->receivedAccount->name : '' }} --}}
                                 </td>
 
                                 <td class="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
@@ -107,6 +115,11 @@
                                             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400">
                                             Paid
                                         </span>
+                                    @elseif($sale->received_amount <= 0)
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500 text-white dark:bg-green-500/10 dark:text-green-400">
+                                            Unpaid
+                                        </span>
                                     @else
                                         <span
                                             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400">
@@ -119,24 +132,26 @@
                                     <div class="inline-flex items-center gap-1">
 
                                         {{-- View --}}
-                                        {{-- <a href="{{ route('sale.show', $sale->id) }}" title="View"
+                                        <button title="View" @click.prevent.stop="open({{ $sale->id }})"
                                             class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-brand-500 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-500/10 transition-colors">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                stroke-width="2">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                                 <circle cx="12" cy="12" r="3" />
                                             </svg>
-                                        </a> --}}
+                                        </button>
 
                                         {{-- Edit: only if no payment received and not reversed --}}
-                                        {{-- @if ($sale->received_amount == 0 && !$sale->reversed_at)
+                                        {{-- @if ($sale->received_amount == 0 && !$sale->reversed_at) --}}
                                         <a href="{{ route('sale.edit', $sale->id) }}" title="Edit"
                                             class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-brand-500 hover:bg-brand-50 dark:text-gray-400 dark:hover:text-brand-400 dark:hover:bg-brand-500/10 transition-colors">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                stroke-width="2">
                                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                             </svg>
                                         </a>
-                                        @endif --}}
+                                        {{-- @endif --}}
 
                                     </div>
                                 </td>

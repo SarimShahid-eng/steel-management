@@ -87,7 +87,7 @@ class ExpensePaymentController extends Controller
             });
 
             return redirect()
-                ->route('expenses.index')
+                ->route('expensePayment.index')
                 ->with('success', 'Expense recorded successfully!');
 
         } catch (\Exception $e) {

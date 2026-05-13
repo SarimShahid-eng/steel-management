@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_account_id');
-            $table->foreignId('payment_account_id')->constrained('accounts');
+            $table->foreignId('payment_account_id')->constrained('accounts')->nullable();
             $table->foreignId('transaction_id');
             $table->decimal('total_amount', 12, 2);
             $table->decimal('received_amount', 12, 2)->default(0);

@@ -42,9 +42,13 @@ class BankCashController extends Controller
         $isUpdate = filled($request->update_id);
         $validated = $request->validated();
         $message = $isUpdate ? 'updated' : 'created';
+
         $isBank = $validated['type'] === 'bank' ? 'Bank' : 'Cash';
         $validated['balance_type'] = 'debit';
-        $validated['balance'] = $validated['opening_balance'];
+        if (array_key_exists('opening_balance', $validated)) {
+            $validated['balance'] = $validated['opening_balance'];
+        }
+
         Account::UpdateOrcreate(
             ['id' => $validated['update_id']],
             $validated);

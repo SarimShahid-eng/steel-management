@@ -45,6 +45,10 @@
                                     :value="@$product->name" />
                             </div>
                             <div class="">
+                                <x-input-text name="type" label="Type" placeholder="e.g. 1/2,1/3 etc... " required
+                                    :value="@$product->type" />
+                            </div>
+                            <div class="">
                                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                                     Description
                                 </label>

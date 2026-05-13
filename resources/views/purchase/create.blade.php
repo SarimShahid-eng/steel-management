@@ -24,9 +24,10 @@
                 </a>
             </div>
 
-            <form method="POST" action="{{ route('purchase.store') }}" x-data="purchaseForm()">
+            <form method="POST" action="{{ !isset($purchase) ? route('purchase.store') : route('purchase.update') }}"
+                x-data="purchaseForm()">
                 @csrf
-
+                <input type="hidden" name="update_id" value="{{ @$purchase->id }}">
                 {{-- ── SECTION 1: Purchase Info ── --}}
                 <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] mb-5">
 
@@ -83,7 +84,8 @@
                                         <option value="" disabled selected>Select supplier</option>
                                         @foreach ($suppliers as $supplier)
                                             <option value="{{ $supplier->id }}"
-                                                {{ old('supplier_account_id') == $supplier->id ? 'selected' : '' }}>
+                                                {{ !old('supplier_account_id', $purchase->supplier_account_id ?? null) ? 'selected' : '' }}
+                                                {{-- {{ old('supplier_account_id') == $supplier->id ? 'selected' : '' }} --}}>
                                                 {{ $supplier->name }}
                                             </option>
                                         @endforeach
@@ -245,26 +247,16 @@
                                         <span class="text-sm text-gray-400 dark:text-gray-500" x-text="index + 1"></span>
                                     </div>
 
-                                    {{-- Qty --}}
-                                    {{-- <div class="col-span-6 sm:col-span-3">
-                                        <label class="mb-1 block text-xs text-gray-500 sm:hidden">Qty</label>
-                                        <input type="number" :name="`items[${index}][qty]`" x-model.number="item.qty"
-                                            @input="calcAmount(item)" min="0" placeholder="0"
-                                            class="dark:bg-dark-900 shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-800 text-right placeholder:text-gray-400 focus:ring-3 focus:outline-hidden focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
-
-
-                                        @error('items.*.qty')
-                                            <p class="text-theme-xs text-error-500 mt-1.5">{{ $message }}</p>
-                                        @enderror
-
-                                    </div> --}}
                                     <div class="col-span-6 sm:col-span-3">
                                         <label class="mb-1 block text-xs text-gray-500 sm:hidden">Product</label>
-                                        <select :name="`items[${index}][product_id]`" x-init="$el.value = item.product_id ?? ''"
+                                        <select :name="`items[${index}][product_id]`" x-model="item.product_id"
+                                            x-init="$el.value = item.product_id ?? ''"
                                             class="shadow-theme-xs rounded-lg border w-full border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:ring-3 focus:outline-hidden focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                             <option value="">Select Product</option>
                                             @foreach ($products as $product)
-                                                <option value="{{ $product->id }}">{{ $product->name }}</option>
+                                                <option value="{{ $product->id }}">
+                                                    {{ $product->name }}{{ $product->type ? '--' . $product->type : '' }}
+                                                </option>
                                             @endforeach
                                         </select>
 
@@ -277,7 +269,7 @@
                                     {{-- Weight --}}
                                     <div class="col-span-6 sm:col-span-3">
                                         <label class="mb-1 block text-xs text-gray-500 sm:hidden">Weight (kg)</label>
-                                        <input type="number" :name="`items[${index}][weight]`"
+                                        <input type="number" :name="`items[${index}][weight]`" step="any"
                                             x-model.number="item.weight" @input="calcAmount(item)" min="0"
                                             placeholder="0.00"
                                             class="dark:bg-dark-900 shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-800 text-right placeholder:text-gray-400 focus:ring-3 focus:outline-hidden focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
@@ -290,7 +282,7 @@
                                     <div class="col-span-6 sm:col-span-3">
                                         <label class="mb-1 block text-xs text-gray-500 sm:hidden">Rate / kg</label>
                                         <input type="number" :name="`items[${index}][rate]`" x-model.number="item.rate"
-                                            @input="calcAmount(item)" min="0" placeholder="0.00"
+                                            step="any" @input="calcAmount(item)" min="0" placeholder="0.00"
                                             class="dark:bg-dark-900 shadow-theme-xs w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-800 text-right placeholder:text-gray-400 focus:ring-3 focus:outline-hidden focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
                                         @error('items.*.rate')
                                             <p class="text-theme-xs text-error-500 mt-1.5">{{ $message }}</p>
@@ -346,7 +338,8 @@
                         <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
                             {{-- Paid Amount --}}
-                            <div class="w-full sm:max-w-xs">
+                            <div :class="(paymentType === 'bank' || paymentType === 'cash') ? 'visible' : 'invisible'"
+                                class="w-full sm:max-w-xs">
                                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                                     Paid Amount <span class="text-error-500">*</span>
                                 </label>
@@ -473,12 +466,12 @@
             // alett
             function purchaseForm() {
                 return {
-                    supplierId: '{{ old('supplier_account_id', '') }}',
-                    paymentType: '{{ old('payment_type', '') }}',
-                    paymentAccountId: '{{ old('payment_account_id', '') }}',
-                    paidAmount: {{ old('paid_amount', 0) }},
-                    totalAmount: 0,
-                    remainingAmount: 0,
+                    supplierId: '{{ old('supplier_account_id', $purchase->supplier_account_id ?? '') }}',
+                    paymentType: '{{ old('payment_type', isset($purchase) ? $purchase->paymentAccount->type ?? 'credit' : '') }}',
+                    // paymentAccountId: '{{ old('payment_account_id', $purchase->payment_account_id ?? '') }}',
+                    paidAmount: {{ old('paid_amount', $purchase->paid_amount ?? 0) }},
+                    totalAmount: {{ old('totalAmount', $purchase->total_amount ?? 0) }},
+                    remainingAmount: {{ old('remaining_amount', $purchase->remaining_amount ?? 0) }},
                     items: [],
                     nextId: 0,
 
@@ -487,6 +480,7 @@
                     // alert(items)
                     init() {
                         const oldItems = @json(old('items', []));
+                        const dbItems = @json($purchase->purchaseItems ?? []);
                         if (oldItems.length > 0) {
                             this.items = oldItems.map((item, i) => ({
                                 id: i,
@@ -497,6 +491,17 @@
                             }));
                             this.nextId = this.items.length;
                             this.calcTotal();
+                        } else if (dbItems.length > 0) {
+                            // Load from Database for Edit
+                            this.items = dbItems.map((item, i) => ({
+                                id: i,
+                                product_id: item.product_id,
+                                weight: parseFloat(item.weight),
+                                rate: parseFloat(item.rate),
+                                amount: parseFloat(item.amount),
+                            }));
+                            this.nextId = this.items.length;
+                            this.calcTotal();
                         } else {
                             this.addItem();
                         }
@@ -504,7 +509,12 @@
 
                         // Restore on validation fail
                         if (this.paymentType === 'cash' || this.paymentType === 'bank') {
-                            this.fetchAccounts(this.paymentType);
+                            // this.fetchAccounts(this.paymentType);
+                            this.fetchAccounts(this.paymentType).then(() => {
+                                this.paymentAccountId =
+                                    '{{ old('payment_account_id', $purchase->payment_account_id ?? '') }}';
+                            });
+                            // this.paymentAccountId = '{{ old('payment_account_id', $purchase->payment_account_id ?? '') }}';
                         }
 
                         this.$watch('paymentType', (type) => {
@@ -536,7 +546,7 @@
                     addItem() {
                         this.items.push({
                             id: this.nextId++,
-                             product_id: '',
+                            product_id: '',
                             // qty: null,
                             weight: null,
                             rate: null,

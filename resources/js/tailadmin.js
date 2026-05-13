@@ -8,6 +8,7 @@ import persist from "@alpinejs/persist";
 import flatpickr from "flatpickr";
 import Dropzone from "dropzone";
 
+import purchaseChart01 from "./components/charts/purchaseChart";
 import chart01 from "./components/charts/chart-01";
 import chart02 from "./components/charts/chart-02";
 import chart03 from "./components/charts/chart-03";
@@ -52,6 +53,7 @@ if (dropzoneArea.length) {
 // Document Loaded
 document.addEventListener("DOMContentLoaded", () => {
   chart01();
+  purchaseChart01();
   chart02();
   chart03();
   map01();

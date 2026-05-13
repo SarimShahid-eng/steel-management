@@ -40,4 +40,9 @@ class Account extends Model
     {
         return $this->hasOne(AccountDetail::class);
     }
+
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class, 'supplier_account_id');
+    }
 }

@@ -73,6 +73,7 @@
                             <th class="py-3 px-4 text-left text-theme-sm text-gray-500">fathername</th>
                             <th class="py-3 px-4 text-left text-theme-sm text-gray-500">Phone number</th>
                             <th class="py-3 px-4 text-left text-theme-sm text-gray-500">Opening Balance</th>
+                            <th class="py-3 px-4 text-left text-theme-sm text-gray-500">Balance</th>
                             <th class="py-3 px-4 text-center text-theme-sm text-gray-500">Actions</th>
                         </tr>
                     </thead>
@@ -99,6 +100,9 @@
                                 </td>
                                 <td class="py-3 px-4 font-medium text-gray-800 dark:text-white/90">
                                     {{ $customer->opening_balance }}
+                                </td>
+                                <td class="py-3 px-4 font-medium text-gray-800 dark:text-white/90">
+                                    {{ $customer->balance }}
                                 </td>
 
                                 <td class="px-5 py-4 text-center">

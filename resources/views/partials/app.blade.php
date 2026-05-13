@@ -7,7 +7,8 @@
         content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('admin_assets/logo/favicon-32x32.svg') }}">
+
+    <link rel="icon" type="image/svg+xml" href="{{ asset('admin_assets/logo/favicon_64.png') }}">
     <title>
         {{ $title }}
     </title>

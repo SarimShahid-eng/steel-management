@@ -2,11 +2,15 @@ import ApexCharts from "apexcharts";
 
 // ===== chartOne
 const chart01 = () => {
+
+
+const dynamicSeries = window.chartOneData || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   const chartOneOptions = {
     series: [
       {
         name: "Sales",
-        data: [168, 385, 201, 298, 187, 195, 291, 110, 215, 390, 280, 112],
+        data: dynamicSeries,
+        // data: [168, 385, 201, 298, 187, 195, 291, 110, 215, 390, 280, 112],
       },
     ],
     colors: ["#465fff"],

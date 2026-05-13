@@ -8,8 +8,8 @@
         <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 min-w-0">
 
             {{-- Icon — always visible --}}
-            <img src="{{ asset('admin_assets/logo/logo1_full.png') }}" alt="Logo" class="w-8 h-8 flex-shrink-0" />
-
+            <img src="{{ asset('admin_assets/logo/symbol_only.png') }}" alt="Logo" class="w-8 h-8 flex-shrink-0" />
+            <span class="font-medium text-md">Rods Management System</span>
             {{-- Text — hidden when sidebar collapsed --}}
             {{-- <span :class="sidebarToggle ? 'lg:hidden' : ''"
                 class="text-base font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
@@ -19,13 +19,14 @@
         </a>
 
         {{-- Close button for mobile — hidden when collapsed --}}
-        <button @click="sidebarToggle = !sidebarToggle" :class="sidebarToggle ? 'lg:hidden' : ''"
+        {{-- <button @click="sidebarToggle = !sidebarToggle" :class="sidebarToggle ? 'lg:hidden' : ''"
             class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 lg:hidden">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-        </button>
+        </button> --}}
 
     </div>
     <!-- SIDEBAR HEADER -->
@@ -36,6 +37,8 @@
         @php
             $activeMenu = match (true) {
                 request()->routeIs('suppliers.*') => 'Suppliers',
+                request()->routeIs('ledger.*') => 'Ledgers',
+
                 request()->routeIs('customers.*') || request()->routeIs('customersPayment.*') => 'Customers',
                 request()->routeIs('expenses.*') || request()->routeIs('customersPayment.*') => 'Expenses',
                 request()->routeIs('cash.*') || request()->routeIs('customersPayment.*') => 'Cash',
@@ -115,7 +118,22 @@
                             </span>
                         </a>
                     </li>
+                    {{-- Supplier Payment Account --}}
+                    <li>
+                        <a href="{{ route('supplierPayment.index') }}"
+                            class="menu-item group
+                            {{ request()->routeIs('supplierPayment.*') ? 'menu-item-active' : 'menu-item-inactive' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m9 14.25 6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                            </svg>
 
+                            <span class="menu-item-text">
+                                Supplier Payment
+                            </span>
+                        </a>
+                    </li>
                     {{-- Cusotomers --}}
                     <li>
                         <a href="{{ route('customers.index') }}"
@@ -134,7 +152,22 @@
                             </span>
                         </a>
                     </li>
+                    {{-- Customer Payment Account --}}
+                    <li>
+                        <a href="{{ route('customerPayment.index') }}"
+                            class="menu-item group
+                            {{ request()->routeIs('customerPayment.*') ? 'menu-item-active' : 'menu-item-inactive' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="m9 14.25 6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                            </svg>
 
+                            <span class="menu-item-text">
+                                Customer Payment
+                            </span>
+                        </a>
+                    </li>
                     {{-- BankCash Account --}}
                     <li>
                         <a href="{{ route('bankCash.index') }}"
@@ -239,6 +272,7 @@
                         </a>
                     </li>
 
+
                     <!-- Menu Item Calendar -->
                     <!-- Menu Item Supplier -->
                     {{-- <li>
@@ -260,20 +294,21 @@
 
 
                     <!-- Menu Item Ui Suppliers -->
-                    {{-- <li>
-                        <a href="#" @click.prevent="selected = (selected === 'Suppliers' ? '':'Suppliers')"
-                            class="menu-item group @activeMenu('suppliers.*') @activeMenu('suppliersPayment.*')">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="24"
-                                height="24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                    <li>
+                        <a href="#" @click.prevent="selected = (selected === 'Ledgers' ? '':'Ledgers')"
+                            class="menu-item group @activeMenu('ledger.*') @activeMenu('ledger.*')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="size-6">
                                 <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                                    d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                             </svg>
+
                             <span class="menu-item-text" :class="sidebarToggle ? 'lg:hidden' : ''">
-                                Suppliers
+                                Ledger
                             </span>
 
                             <svg class="menu-item-arrow absolute right-2.5 top-1/2 -translate-y-1/2 stroke-current"
-                                :class="[(selected === 'Suppliers') ? 'menu-item-arrow-active' : 'menu-item-arrow-inactive',
+                                :class="[(selected === 'Ledgers') ? 'menu-item-arrow-active' : 'menu-item-arrow-inactive',
                                     sidebarToggle ? 'lg:hidden' : ''
                                 ]"
                                 width="20" height="20" viewBox="0 0 20 20" fill="none"
@@ -285,33 +320,50 @@
 
                         <!-- Dropdown Menu Start -->
                         <div class="overflow-hidden transform translate "
-                            :class="(selected === 'Suppliers') ? 'block' : 'hidden'">
+                            :class="(selected === 'Ledgers') ? 'block' : 'hidden'">
                             <ul :class="sidebarToggle ? 'lg:hidden' : 'flex'"
                                 class="flex flex-col gap-1 mt-2 menu-dropdown pl-9">
                                 <li>
-                                    <a href="{{ route('suppliers.index') }}"
-                                        class="menu-dropdown-item group @menuDropdownItem('suppliers.index')">
-                                        Manage
-                                    </a>
-                                </li>
-
-
-                                <li>
-                                    <a href="{{ route('suppliersPayment.create') }}"
-                                        class="menu-dropdown-item group @menuDropdownItem('suppliersPayment.*')">
-                                        Payments
+                                    <a href="{{ route('ledger.supplier') }}"
+                                        class="menu-dropdown-item group @menuDropdownItem('ledger.supplier')">
+                                        Supplier
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="{{ route('suppliers.ledger') }}"
-                                        class="menu-dropdown-item group @menuDropdownItem('suppliers.ledger')">
-                                        Ledger
+                                    <a href="{{ route('ledger.customer') }}"
+                                        class="menu-dropdown-item group @menuDropdownItem('ledger.customer')">
+                                        Customer
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('ledger.expense') }}"
+                                        class="menu-dropdown-item group @menuDropdownItem('ledger.expense')">
+                                        Expense
                                     </a>
                                 </li>
                             </ul>
                         </div>
-                        <!-- Dropdown Menu End -->
-                    </li> --}}
+                        {{-- Report --}}
+                    <li>
+                        <a href="{{ route('report.index') }}"
+                            class="menu-item group
+                            {{ request()->routeIs('report.*') ? 'menu-item-active' : 'menu-item-inactive' }}">
+
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                            </svg>
+
+
+
+                            <span class="menu-item-text">
+                                Reports
+                            </span>
+                        </a>
+                    </li>
+                    <!-- Dropdown Menu End -->
+                    </li>
                     <!-- Menu Item Ui Suppliers -->
 
                 </ul>

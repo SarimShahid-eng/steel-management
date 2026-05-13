@@ -9,6 +9,7 @@ class LoginController extends Controller
 {
     public function login()
     {
+        // dd('s');
         return view('login');
 
     }

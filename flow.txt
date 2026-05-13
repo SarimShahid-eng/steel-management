@@ -89,7 +89,15 @@ Supplier	credit	Supplier is someone you owe money to. When you purchase, your de
 Customer	debit	Customer is someone who owes you money. When you sell, their owed amount increases → debit. When they pay, it decreases → credit.
 Cash / Bank	debit	Money you have → debit-type
 Expense	debit	Spending → debit-type
+Supplier payment
+User selects: supplier + which cash/bank to pay from + amount + date
 
+Transaction (type: payment)
+  AccountEntry → Supplier account   DR  ← reduces what we owe
+  AccountEntry → Cash/Bank account  CR  ← money goes out
+
+Same concept applies to customer payments too — customer pays you, you debit cash/bank (money comes in) and
+credit the customer account (reduces what they owe you).
 
 Stick to this everywhere:
 
@@ -98,3 +106,14 @@ Money going out → credit cash
 You owe someone → credit (supplier)
 Someone owes you → debit (customer)
 Expense → always debit
+
+
+When a sale happens its total amount entries will be recorded
+Customer → Debit 1000      // full sale
+Sales → Credit 1000        // revenue
+
+Cash → Debit 200           // received
+Customer → Credit 200      // adjustment
+
+A purchase done
+supplier will give us that money according to the purchase we have paid them 3000
